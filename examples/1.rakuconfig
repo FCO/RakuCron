@@ -1,0 +1,22 @@
+use App::RakuCron::Configuration;
+
+config {
+    # every Mon/Web/Fri at 10:00:00
+    .run-at: :10hours, :wday<Mon Wed Fri>, { shell "ls -la" }
+
+    # every work day at every hour
+    .run-at: :wday(2..6), :hours(*), { say "running!" }
+
+    # every even day at 00:00 and 00:30
+    .run-at: :day(* %% 2), :0hours, :minutes[0, 30], { say "running!" }
+
+    # half in half hour in January
+    .run-at: :month<Jan>, :minutes[0, 30], { say "running!" }
+}
+
+# It will generate the following rules:
+
+# App::RakuCron::Rule.new(year => [...], month => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], day => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31], hour => [10], min => [0], sec => [0], wday => [2, 4, 6], proc => -> ;; $_? is raw = OUTER::<$_> { #`(Block|2826542399136) ... })
+# App::RakuCron::Rule.new(year => [...], month => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], day => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31], hour => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], min => [0], sec => [0], wday => [2, 3, 4, 5, 6], proc => -> ;; $_? is raw = OUTER::<$_> { #`(Block|2826542399208) ... })
+# App::RakuCron::Rule.new(year => [...], month => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], day => [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], hour => [0], min => [0, 30], sec => [0], wday => [1, 2, 3, 4, 5, 6, 7], proc => -> ;; $_? is raw = OUTER::<$_> { #`(Block|2826542399280) ... })
+# App::RakuCron::Rule.new(year => [...], month => [1], day => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31], hour => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], min => [0, 30], sec => [0], wday => [1, 2, 3, 4, 5, 6, 7], proc => -> ;; $_? is raw = OUTER::<$_> { #`(Block|2826542399352) ... })
