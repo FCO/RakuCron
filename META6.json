@@ -6,6 +6,8 @@
   "build-depends": [
   ],
   "depends": [
+      "https://github.com/FCO/MergeOrderedSeqs.git",
+      "https://github.com/FCO/Configuration.git"
   ],
   "description": "blah blah blah",
   "license": "Artistic-2.0",
