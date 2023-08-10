@@ -26,3 +26,7 @@ method run-at(
         :&proc
     ;
 }
+
+method jobs-should-run-at(DateTime $time) {
+    @!rules.grep({ $time ~~ $_ }).map: *.proc
+}

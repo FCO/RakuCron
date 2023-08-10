@@ -1,6 +1,6 @@
-unit class App::RakuCron::Rule;
+unit class App::RakuCron::Rule does Iterable;
 
-my $range-year = 2000..Inf;
+my $range-year = DateTime.now.year..Inf;
 my $range-month = 1 .. 12;
 my $range-day   = 1 .. 31;
 my $range-hour  = ^24;
@@ -77,15 +77,59 @@ multi transform-par(*%pars where { .values.head !~~ Positional }) {
 submethod TWEAK(*%pars) {
     fail "No time rule defined" unless %pars;
 
+    my $now = DateTime.now;
+
     enum Units <sec min hour day month year>;
     my $first = [sec, min, hour, day, month, year].first: { %pars{.key}:exists }
 
-    @!year  = %pars<year >:exists ?? transform-par(year  => %pars<year >) !! $first < year  ?? $range-year .list !! $range-year .min;
-    @!month = %pars<month>:exists ?? transform-par(month => %pars<month>) !! $first < month ?? $range-month.list !! $range-month.min;
-    @!day   = %pars<day  >:exists ?? transform-par(day   => %pars<day  >) !! $first < day   ?? $range-day  .list !! $range-day  .min;
-    @!hour  = %pars<hour >:exists ?? transform-par(hour  => %pars<hour >) !! $first < hour  ?? $range-hour .list !! $range-hour .min;
-    @!min   = %pars<min  >:exists ?? transform-par(min   => %pars<min  >) !! $first < min   ?? $range-min  .list !! $range-min  .min;
-    @!sec   = %pars<sec  >:exists ?? transform-par(sec   => %pars<sec  >) !! $first < sec   ?? $range-sec  .list !! $range-sec  .min;
+    my &rM = *.list.rotate: $now.month        - 1;
+    my &rd = *.list.rotate: $now.day          - 1;
+    my &rh = *.list.rotate: $now.hour         - 1;
+    my &rm = *.list.rotate: $now.minute       - 1;
+    my &rs = *.list.rotate: $now.whole-second - 1;
+
+    @!year  = %pars<year >:exists ?? transform-par(year  => %pars<year >) !! $first < year  ?? $range-year.list !! $range-year .min;
+    @!month = %pars<month>:exists ?? transform-par(month => %pars<month>) !! $first < month ?? $range-month.&rM !! $range-month.min;
+    @!day   = %pars<day  >:exists ?? transform-par(day   => %pars<day  >) !! $first < day   ?? $range-day.&rd   !! $range-day  .min;
+    @!hour  = %pars<hour >:exists ?? transform-par(hour  => %pars<hour >) !! $first < hour  ?? $range-hour.&rh  !! $range-hour .min;
+    @!min   = %pars<min  >:exists ?? transform-par(min   => %pars<min  >) !! $first < min   ?? $range-min.&rm   !! $range-min  .min;
+    @!sec   = %pars<sec  >:exists ?? transform-par(sec   => %pars<sec  >) !! $first < sec   ?? $range-sec.&rs   !! $range-sec  .min;
 
     @!wday  = %pars<wday >:exists ?? transform-par(wday  => %pars<wday>) !! (1 .. 7).list;
 }
+
+multi method ACCEPTS(DateTime $time --> Bool:D) {
+    my $wday = $time.day-of-week + 1;
+
+    my Bool:D %b;
+    %b<sec  > = @!sec  .first( * == $time.whole-second ).defined;
+    %b<min  > = @!min  .first( * == $time.minute )      .defined;
+    %b<hour > = @!hour .first( * == $time.hour )        .defined;
+    %b<day  > = @!day  .first( * == $time.day )         .defined;
+    %b<month> = @!month.first( * == $time.month )       .defined;
+    %b<year > = @!year .first( * == $time.year )        .defined;
+    %b<wday > = @!wday .first( * == $wday )             .defined;
+    [&&] %b.values;
+}
+
+method Seq {
+    sub create-datetime(
+        UInt $year,
+        UInt $month,
+        UInt $day,
+        UInt $hour,
+        UInt $minute,
+        UInt $second,
+    ) is assoc<list> {
+        DateTime.new:
+          :$year, :$month,  :$day,
+          :$hour, :$minute, :$second,
+    }
+
+    ([X] @!year, @!month, @!day, @!hour, @!min, @!sec)
+      .map({ try { create-datetime |$_ } // Empty })
+      .toggle(:off, * >= DateTime.now)
+      .grep(self)
+}
+
+method iterator { self.Seq.iterator }

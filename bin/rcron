@@ -1,9 +1,18 @@
 #!/usr/bin/env raku
 
 use App::RakuCron::Configuration;
+use App::RakuCron::Rules;
+use MergeOrderedSeqs;
 
 subset File of Str where *.IO.f;
 
 multi MAIN(File $file) {
-    .say for await(config-run :$file).rules
+    react {
+        whenever config-run :$file -> App::RakuCron::Rules $rules {
+            for merge-ordered-seqs($rules.rules).squish -> DateTime $time {
+                await Promise.at: $time.Instant;
+                .() for $rules.jobs-should-run-at: $time;
+            }
+        }
+    }
 }
