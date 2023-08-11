@@ -21,6 +21,7 @@ has &.last-run;
 has $.d-secs;
 has $.d-mins;
 has $.d-hours;
+has $.d-days;
 
 has $.capture = \();
 has &.proc;
@@ -29,13 +30,13 @@ has @!data-to-proc = &!proc.signature.params.grep(*.named).map: *.name.substr: 1
 method run(DateTime $time) {
     CATCH {
         default {
-            .&die
+            warn $_
         }
     }
     LEAVE $!last-run-datetime = $time;
     my %data = self!data-with-time($time){@!data-to-proc}:p;
     my &proc = &!proc;
-    proc |%data, |$!capture
+    try proc |%data, |$!capture
 }
 
 my %months =
@@ -127,7 +128,10 @@ submethod TWEAK(*%pars) {
     my $now = DateTime.now;
 
     enum Units <sec min hour day month year>;
-    my $first is default(-1) = [sec, min, hour, day, month, year].first: { %pars{.key}:exists }
+    my $first = [sec, min, hour, day, month, year].first: { %pars{.key}:exists }
+    enum DeltaUnits <d-secs d-mins d-hours d-days>;
+    $first //= [d-secs, d-mins, d-hours, d-days].first: { %pars{.key}:exists }
+    $first //= -1;
 
     my &rM = *.list.rotate: $now.month - 1;
     my &rd = *.list.rotate: $now.day   - 1;
@@ -164,9 +168,10 @@ method delta-validations(DateTime $time --> Bool:D) {
     my Bool:D %b;
     %b<none>     = True;
     %b<last-run> = &!last-run.($!last-run-datetime)               if &!last-run.defined && $!last-run-datetime.defined;
-    %b<d-secs>   = ($time - $!last-run-datetime).Int ~~ $!d-secs  if $!d-secs.defined   && $!last-run-datetime.defined;
-    %b<d-mins>   = ($time - $!last-run-datetime).Int ~~ $!d-mins  if $!d-mins.defined   && $!last-run-datetime.defined;
-    %b<d-hours>  = ($time - $!last-run-datetime).Int ~~ $!d-hours if $!d-hours.defined  && $!last-run-datetime.defined;
+    %b<d-secs>   = (my $secs = ($time - $!last-run-datetime).Int) ~~ $!d-secs  if $!d-secs.defined   && $!last-run-datetime.defined;
+    %b<d-mins>   = (my $mins = $secs div 60)                      ~~ $!d-mins  if $!d-mins.defined   && $!last-run-datetime.defined;
+    %b<d-hours>  = (my $hour = $mins div 60)                      ~~ $!d-hours if $!d-hours.defined  && $!last-run-datetime.defined;
+    %b<d-days>   = (my $days = $hour div 24)                      ~~ $!d-days  if $!d-days.defined   && $!last-run-datetime.defined;
 
     [&&] %b.values;
 }

@@ -7,15 +7,28 @@ subset File of Str where *.IO.f;
 
 multi MAIN(File $file) {
     react {
-        whenever config-run :$file -> App::RakuCron::Rules $rules {
-            for $rules.next-datetimes -> DateTime $time {
-                next if $time < DateTime.now;
-                await Promise.at: $time.Instant;
-                for $rules.jobs-should-run-at: $time {
-                    next unless .delta-validations: $time;
-                    .run($time)
-                }
+        my $running = True;
+        whenever config-run :$file, :watch -> App::RakuCron::Rules $rules {
+            say "got config";
+            $running = False;
+            $running := run-start $rules;
+        }
+    }
+}
+
+sub run-start(App::RakuCron::Rules $rules) is rw {
+    my Bool $still-running = True;
+
+    start {
+        DATE: for $rules.next-datetimes -> DateTime $time {
+            next if $time < DateTime.now;
+            await Promise.at: $time.Instant;
+            for $rules.jobs-should-run-at: $time {
+                last DATE unless $still-running;
+                next unless .delta-validations: $time;
+                .run($time)
             }
         }
     }
+    $still-running
 }

@@ -1,7 +1,7 @@
 use App::RakuCron::Configuration;
 
-sub print-example(Str $msg,  +@params, :$time, :$delta-secs, :$something-else) {
-    say "$msg (@params[]) ({ $something-else // "" }): ", $time, " -> { $delta-secs // "None" }"
+sub print-example(Str $msg = "Generic message",  +@params, :$time, :$delta-secs, :$something-else) {
+    say "$msg (@params[]) ({ $something-else // "" }): ", $time.hh-mm-ss, " -> { $delta-secs // "None" }"
 }
 
 config {
@@ -18,8 +18,22 @@ config {
     .run-at: :month<Jan>, :minutes[0, 30], { say "running!" }
 
     # run every minute
-    .run-at: :sec(* %% 5), :capture(\("every 5 secs", :something-else(42))), &print-example;
+    .run-at: :min(*), :capture(\("every minute", :something-else(42))), &print-example;
 
-    # Every other second
-    .run-at: :2delta-secs, :capture("every other second", "bla", "ble"), &print-example;
+    # Every other hour
+    .run-at: :2delta-hours, :capture("every other hour", "bla", "ble"), &print-example;
+
+    # It can create multiple rules on a single call using arrays of captures
+    .run-at: [
+        \( :secs(* %% 10) ), # Every second divisible by 10
+        \( :secs((* + 5) %% 10), :capture("between 10") ), # Every second divisible by 10 (5 secs after the other one)
+    ], &print-example;
+
+    # Or call it a single time passing a single array
+    .run-at: [
+        \( :10hours, :wday<Mon Wed Fri>,           { shell "ls -la" } ),
+        \( :wday(2..6), :hours(*),                 { say "running!" } ),
+        \( :day(* %% 2), :0hours, :minutes[0, 30], { say "running!" } ),
+        \( :month<Jan>, :minutes[0, 30],           { say "running!" } ),
+    ];
 }
