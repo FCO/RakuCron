@@ -1,5 +1,9 @@
 use App::RakuCron::Configuration;
 
+sub print-example(Str $msg,  +@params, :$time, :$delta-secs, :$something-else) {
+    say "$msg (@params[]) ({ $something-else // "" }): ", $time, " -> { $delta-secs // "None" }"
+}
+
 config {
     # every Mon/Web/Fri at 10:00:00
     .run-at: :10hours, :wday<Mon Wed Fri>, { shell "ls -la" }
@@ -14,5 +18,8 @@ config {
     .run-at: :month<Jan>, :minutes[0, 30], { say "running!" }
 
     # run every minute
-    .run-at: :min(*), { say "running!!!" }
+    .run-at: :sec(* %% 5), :capture(\("every 5 secs", :something-else(42))), &print-example;
+
+    # Every other second
+    .run-at: :2delta-secs, :capture("every other second", "bla", "ble"), &print-example;
 }

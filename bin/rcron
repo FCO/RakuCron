@@ -2,16 +2,19 @@
 
 use App::RakuCron::Configuration;
 use App::RakuCron::Rules;
-use MergeOrderedSeqs;
 
 subset File of Str where *.IO.f;
 
 multi MAIN(File $file) {
     react {
         whenever config-run :$file -> App::RakuCron::Rules $rules {
-            for merge-ordered-seqs($rules.rules).squish -> DateTime $time {
+            for $rules.next-datetimes -> DateTime $time {
+                next if $time < DateTime.now;
                 await Promise.at: $time.Instant;
-                .() for $rules.jobs-should-run-at: $time;
+                for $rules.jobs-should-run-at: $time {
+                    next unless .delta-validations: $time;
+                    .run($time)
+                }
             }
         }
     }
