@@ -1,9 +1,18 @@
 use Configuration;
 use App::RakuCron::Rule;
 use MergeOrderedSeqs;
-unit class App::RakuCron::Rules does Configuration::Node;
+use Lumberjack;
+unit class App::RakuCron::Rules does Configuration::Node does Lumberjack::Logger;
 
 has App::RakuCron::Rule @.rules;
+
+method log-level is rw {
+    App::RakuCron::Rule.log-level
+}
+
+method TWEAK(|) {
+    self.log-debug: "New rules loaded."
+}
 
 multi method run-at(
     &proc,

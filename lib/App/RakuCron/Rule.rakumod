@@ -1,4 +1,5 @@
-unit class App::RakuCron::Rule does Iterable;
+use Lumberjack;
+unit class App::RakuCron::Rule does Iterable does Lumberjack::Logger;
 
 my $range-year = DateTime.now.year..Inf;
 my $range-month = 1 .. 12;
@@ -6,6 +7,9 @@ my $range-day   = 1 .. 31;
 my $range-hour  = ^24;
 my $range-min   = ^60;
 my $range-sec   = ^60;
+
+has $.id = ++$;
+has Capture $.rule-params;
 
 has $!last-run-datetime;
 
@@ -27,16 +31,25 @@ has $.capture = \();
 has &.proc;
 has @!data-to-proc = &!proc.signature.params.grep(*.named).map: *.name.substr: 1;
 
+method log-trace(*@msg) {self.Lumberjack::Logger::log-trace: ["[rule $!id]", |@msg].join: " "}
+method log-debug(*@msg) {self.Lumberjack::Logger::log-debug: ["[rule $!id]", |@msg].join: " "}
+method log-info(*@msg)  {self.Lumberjack::Logger::log-info:  ["[rule $!id]", |@msg].join: " "}
+method log-warn(*@msg)  {self.Lumberjack::Logger::log-warn:  ["[rule $!id]", |@msg].join: " "}
+method log-error(*@msg) {self.Lumberjack::Logger::log-error: ["[rule $!id]", |@msg].join: " "}
+method log-fatal(*@msg) {self.Lumberjack::Logger::log-fatal: ["[rule $!id]", |@msg].join: " "}
+
 method run(DateTime $time) {
+    my %data = self!data-with-time($time){@!data-to-proc}:p;
+    my Capture $args = \(|%data, |$!capture);
     CATCH {
-        default {
-            warn $_
-        }
+       default {
+           self.log-fatal: "Error while running process { &!proc.raku } with arguments { $args.raku }: ", $_
+       }
     }
     LEAVE $!last-run-datetime = $time;
-    my %data = self!data-with-time($time){@!data-to-proc}:p;
     my &proc = &!proc;
-    try proc |%data, |$!capture
+    self.log-trace: "running process { &!proc.raku } passing argumentss { $args.raku }";
+    proc |$args
 }
 
 my %months =
@@ -92,12 +105,13 @@ multi transform-par(*%pars where { .values.head ~~ Positional }) {
     %pars.values.head.map: { transform-par |%( %pars.keys.head => $_ ) }
 }
 multi transform-par(*%pars where { .values.head !~~ Positional }) {
-    die "Could not recognize { %pars.keys.head }: { %pars.values.head }"
+    die "Could not recognize { %pars.keys.head }: { %pars.values.head }";
 }
 
 method !data-with-time(DateTime $time --> Map()) {
     quietly
     :$time,
+    rule         => self,
     last-run     => $!last-run-datetime // DateTime,
     year         => $time.year,
     month        => $time.month,
@@ -122,22 +136,31 @@ method !data-with-time(DateTime $time --> Map()) {
     )
 }
 
-submethod TWEAK(*%pars) {
+submethod TWEAK(|c (*%pars)) {
     fail "No time rule defined" unless %pars;
+
+    $!rule-params = c;
+    self.log-debug: "new rule instanciated:", $!rule-params.raku;
 
     my $now = DateTime.now;
 
     enum Units <sec min hour day month year>;
     my $first = [sec, min, hour, day, month, year].first: { %pars{.key}:exists }
     enum DeltaUnits <d-secs d-mins d-hours d-days>;
-    $first //= [d-secs, d-mins, d-hours, d-days].first: { %pars{.key}:exists }
+    $first //= [d-secs, d-mins, d-hours, d-days].first({ %pars{.key}:exists }) - 1;
     $first //= -1;
 
     my &rM = *.list.rotate: $now.month - 1;
     my &rd = *.list.rotate: $now.day   - 1;
     my &rh = *.list.rotate: $now.hour;
     my &rm = *.list.rotate: $now.minute;
-    my &rs = *.list; #.rotate: $now.whole-second;
+    my &rs = *.list;
+
+    CATCH {
+        default {
+            self.log-fatal: $_
+        }
+    }
 
     @!year  = %pars<year >:exists ?? transform-par(year  => %pars<year >) !! $first < year  ?? $range-year.list !! $range-year .min;
     @!month = %pars<month>:exists ?? transform-par(month => %pars<month>) !! $first < month ?? $range-month.&rM !! $range-month.min;
@@ -150,16 +173,16 @@ submethod TWEAK(*%pars) {
 }
 
 multi method ACCEPTS(DateTime $time --> Bool:D) {
-    my $wday = $time.day-of-week + 1;
+    my $wday = $time.day-of-week || 7;
 
     my Bool:D %b;
-    %b<sec  > = @!sec  .first( * == $time.whole-second ).defined;
-    %b<min  > = @!min  .first( * == $time.minute       ).defined;
-    %b<hour > = @!hour .first( * == $time.hour         ).defined;
-    %b<day  > = @!day  .first( * == $time.day          ).defined;
-    %b<month> = @!month.first( * == $time.month        ).defined;
-    %b<year > = @!year .first( * == $time.year         ).defined;
-    %b<wday > = @!wday .first( * == $wday              ).defined;
+    %b<sec  > = @!sec  .first( $time.whole-second ).defined;
+    %b<min  > = @!min  .first( $time.minute       ).defined;
+    %b<hour > = @!hour .first( $time.hour         ).defined;
+    %b<day  > = @!day  .first( $time.day          ).defined;
+    %b<month> = @!month.first( $time.month        ).defined;
+    %b<year > = @!year .first( $time.year         ).defined;
+    %b<wday > = @!wday .first( $wday              ).defined;
 
     [&&] %b.values;
 }
@@ -167,11 +190,15 @@ multi method ACCEPTS(DateTime $time --> Bool:D) {
 method delta-validations(DateTime $time --> Bool:D) {
     my Bool:D %b;
     %b<none>     = True;
-    %b<last-run> = &!last-run.($!last-run-datetime)               if &!last-run.defined && $!last-run-datetime.defined;
-    %b<d-secs>   = (my $secs = ($time - $!last-run-datetime).Int) ~~ $!d-secs  if $!d-secs.defined   && $!last-run-datetime.defined;
-    %b<d-mins>   = (my $mins = $secs div 60)                      ~~ $!d-mins  if $!d-mins.defined   && $!last-run-datetime.defined;
-    %b<d-hours>  = (my $hour = $mins div 60)                      ~~ $!d-hours if $!d-hours.defined  && $!last-run-datetime.defined;
-    %b<d-days>   = (my $days = $hour div 24)                      ~~ $!d-days  if $!d-days.defined   && $!last-run-datetime.defined;
+    with $!last-run-datetime {
+        %b<last-run> = &!last-run.($!last-run-datetime)                            with &!last-run;
+        %b<d-secs>   = (my $secs = ($time - $!last-run-datetime).Int) >= $!d-secs  with $!d-secs  ;
+        %b<d-mins>   = (my $mins = $secs div 60)                      >= $!d-mins  with $!d-mins  ;
+        %b<d-hours>  = (my $hour = $mins div 60)                      >= $!d-hours with $!d-hours ;
+        %b<d-days>   = (my $days = $hour div 24)                      >= $!d-days  with $!d-days  ;
+    }
+
+    self.log-trace: %b.raku;
 
     [&&] %b.values;
 }
@@ -191,8 +218,10 @@ method Seq {
           :$hour, :$minute, :$second,
     }
 
+    my $now = DateTime.now;
     ([X] @!year, @!month, @!day, @!hour, @!min, @!sec)
       .map({ try { create-datetime |$_ } // Empty })
+      .toggle(:off, * >= $now)
       .toggle(:off, * >= DateTime.now)
       .grep(self)
 }

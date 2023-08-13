@@ -1,10 +1,18 @@
 use App::RakuCron::Configuration;
+use App::RakuCron::Rule;
+use Lumberjack;
 
 sub print-example(Str $msg = "Generic message",  +@params, :$time, :$delta-secs, :$something-else) {
     say "$msg (@params[]) ({ $something-else // "" }): ", $time.hh-mm-ss, " -> { $delta-secs // "None" }"
 }
 
+Lumberjack.dispatchers = [
+    Lumberjack::Dispatcher::Console.new: :colour
+];
+
 config {
+    .log-level = Lumberjack::Level::Debug;
+
     # every Mon/Web/Fri at 10:00:00
     .run-at: :10hours, :wday<Mon Wed Fri>, { shell "ls -la" }
 
@@ -14,8 +22,8 @@ config {
     # every even day at 00:00 and 00:30
     .run-at: :day(* %% 2), :0hours, :minutes[0, 30], { say "running!" }
 
-    # half in half hour in January
-    .run-at: :month<Jan>, :minutes[0, 30], { say "running!" }
+    # half in half hour in August
+    .run-at: :month<Aug>, :minutes[0, 30], -> :$rule { $rule.log-warn: "running!" }
 
     # run every minute
     .run-at: :min(*), :capture(\("every minute", :something-else(42))), &print-example;
@@ -28,6 +36,8 @@ config {
         \( :secs(* %% 10) ), # Every second divisible by 10
         \( :secs((* + 5) %% 10), :capture("between 10") ), # Every second divisible by 10 (5 secs after the other one)
     ], &print-example;
+
+    # .run-at: :2delta-secs, { die "something went wrong (as expected)" };
 
     # Or call it a single time passing a single array
     .run-at: [

@@ -2,6 +2,7 @@
 
 use App::RakuCron::Configuration;
 use App::RakuCron::Rules;
+use Lumberjack;
 
 subset File of Str where *.IO.f;
 
@@ -9,7 +10,6 @@ multi MAIN(File $file) {
     react {
         my $running = True;
         whenever config-run :$file, :watch -> App::RakuCron::Rules $rules {
-            say "got config";
             $running = False;
             $running := run-start $rules;
         }
@@ -21,7 +21,7 @@ sub run-start(App::RakuCron::Rules $rules) is rw {
 
     start {
         DATE: for $rules.next-datetimes -> DateTime $time {
-            next if $time < DateTime.now;
+            next if $time <= my $now = DateTime.now;
             await Promise.at: $time.Instant;
             for $rules.jobs-should-run-at: $time {
                 last DATE unless $still-running;
