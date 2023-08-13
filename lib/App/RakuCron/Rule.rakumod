@@ -31,12 +31,12 @@ has $.capture = \();
 has &.proc;
 has @!data-to-proc = &!proc.signature.params.grep(*.named).map: *.name.substr: 1;
 
-method log-trace(*@msg) {self.Lumberjack::Logger::log-trace: ["[rule $!id]", |@msg].join: " "}
-method log-debug(*@msg) {self.Lumberjack::Logger::log-debug: ["[rule $!id]", |@msg].join: " "}
-method log-info(*@msg)  {self.Lumberjack::Logger::log-info:  ["[rule $!id]", |@msg].join: " "}
-method log-warn(*@msg)  {self.Lumberjack::Logger::log-warn:  ["[rule $!id]", |@msg].join: " "}
-method log-error(*@msg) {self.Lumberjack::Logger::log-error: ["[rule $!id]", |@msg].join: " "}
-method log-fatal(*@msg) {self.Lumberjack::Logger::log-fatal: ["[rule $!id]", |@msg].join: " "}
+method log-trace(*@msg) is hidden-from-backtrace {self.Lumberjack::Logger::log-trace: ["[$!id]", |@msg].join: " "}
+method log-debug(*@msg) is hidden-from-backtrace {self.Lumberjack::Logger::log-debug: ["[$!id]", |@msg].join: " "}
+method log-info(*@msg)  is hidden-from-backtrace {self.Lumberjack::Logger::log-info:  ["[$!id]", |@msg].join: " "}
+method log-warn(*@msg)  is hidden-from-backtrace {self.Lumberjack::Logger::log-warn:  ["[$!id]", |@msg].join: " "}
+method log-error(*@msg) is hidden-from-backtrace {self.Lumberjack::Logger::log-error: ["[$!id]", |@msg].join: " "}
+method log-fatal(*@msg) is hidden-from-backtrace {self.Lumberjack::Logger::log-fatal: ["[$!id]", |@msg].join: " "}
 
 method run(DateTime $time) {
     my %data = self!data-with-time($time){@!data-to-proc}:p;
@@ -120,19 +120,12 @@ method !data-with-time(DateTime $time --> Map()) {
     min          => $time.minute,
     sec          => $time.second,
     |(
-        $!last-run-datetime
-        ?? |(
+        |(
             delta-secs   => my Int() $dsecs  = $time - $!last-run-datetime,
             delta-mins   => my Int() $dmins  = $dsecs  div 60,
             delta-hours  => my Int() $dhours = $dmins  div 60,
             delta-days   => my Int() $ddays  = $dhours div 24,
-        )
-        !! |(
-            delta-secs   => Int,
-            delta-mins   => Int,
-            delta-hours  => Int,
-            delta-days   => Int,
-        )
+        ) with $!last-run-datetime
     )
 }
 

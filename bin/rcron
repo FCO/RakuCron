@@ -10,7 +10,7 @@ multi MAIN(File $file) {
     react {
         my $running = True;
         whenever config-run :$file, :watch -> App::RakuCron::Rules $rules {
-            $running = False;
+            $running  = False;
             $running := run-start $rules;
         }
     }

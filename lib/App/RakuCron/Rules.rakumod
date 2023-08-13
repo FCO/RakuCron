@@ -16,6 +16,7 @@ method TWEAK(|) {
 
 multi method run-at(
     &proc,
+    :name(:$id),
     :years( :y( :$year ) ),
     :months( :m( :$month )),
     :days( :d( :$day) ),
@@ -33,6 +34,7 @@ multi method run-at(
     *%pars where { $_ == 0 || die "Params not recognized: %pars.keys()" },
 ) {
     %*DATA<rules>.push: App::RakuCron::Rule.new:
+        |(:id($_)       with $id      ),
         |(:year($_)     with $year    ),
         |(:month($_)    with $month   ),
         |(:day($_)      with $day     ),

@@ -2,8 +2,8 @@ use App::RakuCron::Configuration;
 use App::RakuCron::Rule;
 use Lumberjack;
 
-sub print-example(Str $msg = "Generic message",  +@params, :$time, :$delta-secs, :$something-else) {
-    say "$msg (@params[]) ({ $something-else // "" }): ", $time.hh-mm-ss, " -> { $delta-secs // "None" }"
+sub print-example(Str $msg = "Generic message", :$rule, +@params, :$time, :$delta-secs = "None", :$something-else = "") {
+    $rule.log-warn: "$msg (@params[]) ({ $something-else }): ", $time.hh-mm-ss, " -> { $delta-secs }"
 }
 
 Lumberjack.dispatchers = [
@@ -26,16 +26,19 @@ config {
     .run-at: :month<Aug>, :minutes[0, 30], -> :$rule { $rule.log-warn: "running!" }
 
     # run every minute
-    .run-at: :min(*), :capture(\("every minute", :something-else(42))), &print-example;
+    .run-at: :name("every minute"), :min(*), :capture(\("every minute", :something-else(42))), &print-example;
 
     # Every other hour
-    .run-at: :2delta-hours, :capture("every other hour", "bla", "ble"), &print-example;
+    .run-at: :name("every other hour"), :2delta-hours, :capture("every other hour", "bla", "ble"), &print-example;
 
     # It can create multiple rules on a single call using arrays of captures
-    .run-at: [
-        \( :secs(* %% 10) ), # Every second divisible by 10
-        \( :secs((* + 5) %% 10), :capture("between 10") ), # Every second divisible by 10 (5 secs after the other one)
-    ], &print-example;
+    .run-at:
+      :name("one each 5 secs"),
+      [
+          \( :secs(* %% 10) ), # Every second divisible by 10
+          \( :secs((* + 5) %% 10), :capture("between 10") ), # Every second divisible by 10 (5 secs after the other one)
+      ], &print-example
+    ;
 
     # .run-at: :2delta-secs, { die "something went wrong (as expected)" };
 
