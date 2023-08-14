@@ -29,6 +29,8 @@ has $.d-days;
 
 has Bool $.last-day-of-month = False;
 
+has $.th-or-rev;
+
 has $.capture = \();
 has &.proc;
 has @!data-to-proc = &!proc.signature.params.grep(*.named).map: *.name.substr: 1;
@@ -149,6 +151,7 @@ submethod TWEAK(|c (*%pars)) {
       $first -= 1 with $first;
     }
     $first //= day if $!last-day-of-month;
+    $first //= hour with $!th-or-rev;
     $first //= -1;
 
     my @years  = $range-year.list;
@@ -182,7 +185,7 @@ submethod TWEAK(|c (*%pars)) {
 }
 
 multi method ACCEPTS(DateTime $time --> Bool:D) {
-    my $wday = $time.day-of-week || 7;
+    my $wday = $time.day-of-week % 7 + 1;
 
     my Bool:D %b;
     %b<sec  > = @!sec  .first( $time.whole-second ).defined;
@@ -194,6 +197,12 @@ multi method ACCEPTS(DateTime $time --> Bool:D) {
     %b<wday > = @!wday .first( $wday              ).defined;
 
     %b<ldom> = $time.later(:1day).month > $time.month if $!last-day-of-month;
+
+    with $!th-or-rev {
+        my $after  = $time.later: :weeks($!th-or-rev);
+        my $jafter = $time.later: :weeks(($!th-or-rev / $!th-or-rev.abs) * ($!th-or-rev.abs - 1));
+        %b<th-or-rev> = $after.month > $time.month && $jafter.month == $time.month;
+    }
 
     [&&] %b.values;
 }

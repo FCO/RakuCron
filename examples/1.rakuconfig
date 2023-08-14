@@ -32,6 +32,12 @@ config {
     # Every other hour
     .run-at: :name("every other hour"), :2delta-hours, :capture("every other hour", "bla", "ble"), &print-example;
 
+    # 3rd last Monday, every month
+    .run-at: :name("3rd last monday"), :3rd-last-of-the-month, :2wday, &print-example;
+
+    # 2nd Thursday every month
+    .run-at: :name("2nd thursday"), :2rd-of-the-month, :5wday, &print-example;
+
     # It can create multiple rules on a single call using arrays of captures
     .run-at:
       :name("one each 5 secs"),

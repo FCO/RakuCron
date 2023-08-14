@@ -35,6 +35,9 @@ multi method run-at(
     :business-day( :b-day( :$bday ) ),
     :$weekend,
 
+    :st-of-the-month( :nd-of-the-month( :rd-of-the-month( $th-of-the-month ) ) ),
+    :st-last-of-the-month( :nd-last-of-the-month( :rd-last-of-the-month( $th-last-of-the-month ) ) ),
+
     :$capture,
     *%pars where { $_ == 0 || die "Params not recognized: %pars.keys()" },
 ) {
@@ -42,24 +45,27 @@ multi method run-at(
     die "week-day can't be defined along with business-day" if $wday.defined && $bday;
     die "weekend can't be defined along with business-day"  if $wday.defined && $weekend;
     %*DATA<rules>.push: App::RakuCron::Rule.new:
-        |(:id($_)                with $id               ),
-        |(:year($_)              with $year             ),
-        |(:month($_)             with $month            ),
-        |(:day($_)               with $day              ),
-        |(:hour($_)              with $hour             ),
-        |(:min($_)               with $min              ),
-        |(:sec($_)               with $sec              ),
-        |(:wday($_)              with $wday             ),
-        |(:last-run($_)          with &last-run         ),
-        |(:d-secs($_)            with $d-secs           ),
-        |(:d-mins($_)            with $d-mins           ),
-        |(:d-hours($_)           with $d-hours          ),
-        |(:d-days($_)            with $d-days           ),
-        |(:last-day-of-month($_) with $last-day-of-month),
-        |(:capture($_)           with $capture          ),
+        |(:id($_)                   with $id                   ),
+        |(:year($_)                 with $year                 ),
+        |(:month($_)                with $month                ),
+        |(:day($_)                  with $day                  ),
+        |(:hour($_)                 with $hour                 ),
+        |(:min($_)                  with $min                  ),
+        |(:sec($_)                  with $sec                  ),
+        |(:wday($_)                 with $wday                 ),
+        |(:last-run($_)             with &last-run             ),
+        |(:d-secs($_)               with $d-secs               ),
+        |(:d-mins($_)               with $d-mins               ),
+        |(:d-hours($_)              with $d-hours              ),
+        |(:d-days($_)               with $d-days               ),
+        |(:last-day-of-month($_)    with $last-day-of-month    ),
+        |(:capture($_)              with $capture              ),
 
-        |(:wday(2..6)            if   $bday             ),
-        |(:wday(1, 7)            if   $weekend          ),
+        |(:wday(2..6)               if   $bday                 ),
+        |(:wday(1, 7)               if   $weekend              ),
+
+        |(:th-or-rev(-$_)           with $th-of-the-month      ),
+        |(:th-or-rev($_)            with $th-last-of-the-month ),
         :&proc
     ;
 }
