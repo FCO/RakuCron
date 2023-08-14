@@ -17,7 +17,8 @@ config {
     .run-at: :10hours, :wday<Mon Wed Fri>, { shell "ls -la" }
 
     # every work day at every hour
-    .run-at: :wday(2..6), :hours(*), { say "running!" }
+    .run-at: :business-day, :hours(*), { say "running!" }
+    # or # .run-at: :wday(2..6), :hours(*), { say "running!" }
 
     # every even day at 00:00 and 00:30
     .run-at: :day(* %% 2), :0hours, :minutes[0, 30], { say "running!" }
@@ -40,7 +41,10 @@ config {
       ], &print-example
     ;
 
-    # .run-at: :2delta-secs, { die "something went wrong (as expected)" };
+    # .run-at: :2delta-secs, { die "something went wrong (as expected)" }
+
+    # Last day of month
+    .run-at: :last-day-of-month, { say "last day of month" }
 
     # Or call it a single time passing a single array
     .run-at: [

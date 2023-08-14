@@ -30,24 +30,36 @@ multi method run-at(
     :delta-minute( :delta-mins(           :d-minutes( :$d-mins  )   ) ),
     :delta-hour(   :delta-hours(                      :$d-hours     ) ),
     :delta-day(    :delta-days(                       :$d-days      ) ),
+
+    :$last-day-of-month,
+    :business-day( :b-day( :$bday ) ),
+    :$weekend,
+
     :$capture,
     *%pars where { $_ == 0 || die "Params not recognized: %pars.keys()" },
 ) {
+    die "day can't be defined along with last-day-of-month" if $day.defined  && $last-day-of-month.defined;
+    die "week-day can't be defined along with business-day" if $wday.defined && $bday;
+    die "weekend can't be defined along with business-day"  if $wday.defined && $weekend;
     %*DATA<rules>.push: App::RakuCron::Rule.new:
-        |(:id($_)       with $id      ),
-        |(:year($_)     with $year    ),
-        |(:month($_)    with $month   ),
-        |(:day($_)      with $day     ),
-        |(:hour($_)     with $hour    ),
-        |(:min($_)      with $min     ),
-        |(:sec($_)      with $sec     ),
-        |(:wday($_)     with $wday    ),
-        |(:last-run($_) with &last-run),
-        |(:d-secs($_)   with $d-secs  ),
-        |(:d-mins($_)   with $d-mins  ),
-        |(:d-hours($_)  with $d-hours ),
-        |(:d-days($_)   with $d-days  ),
-        |(:capture($_)  with $capture ),
+        |(:id($_)                with $id               ),
+        |(:year($_)              with $year             ),
+        |(:month($_)             with $month            ),
+        |(:day($_)               with $day              ),
+        |(:hour($_)              with $hour             ),
+        |(:min($_)               with $min              ),
+        |(:sec($_)               with $sec              ),
+        |(:wday($_)              with $wday             ),
+        |(:last-run($_)          with &last-run         ),
+        |(:d-secs($_)            with $d-secs           ),
+        |(:d-mins($_)            with $d-mins           ),
+        |(:d-hours($_)           with $d-hours          ),
+        |(:d-days($_)            with $d-days           ),
+        |(:last-day-of-month($_) with $last-day-of-month),
+        |(:capture($_)           with $capture          ),
+
+        |(:wday(2..6)            if   $bday             ),
+        |(:wday(1, 7)            if   $weekend          ),
         :&proc
     ;
 }

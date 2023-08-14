@@ -27,6 +27,8 @@ has $.d-mins;
 has $.d-hours;
 has $.d-days;
 
+has Bool $.last-day-of-month = False;
+
 has $.capture = \();
 has &.proc;
 has @!data-to-proc = &!proc.signature.params.grep(*.named).map: *.name.substr: 1;
@@ -39,17 +41,20 @@ method log-error(*@msg) is hidden-from-backtrace {self.Lumberjack::Logger::log-e
 method log-fatal(*@msg) is hidden-from-backtrace {self.Lumberjack::Logger::log-fatal: ["[$!id]", |@msg].join: " "}
 
 method run(DateTime $time) {
-    my %data = self!data-with-time($time){@!data-to-proc}:p;
-    my Capture $args = \(|%data, |$!capture);
-    CATCH {
-       default {
-           self.log-fatal: "Error while running process { &!proc.raku } with arguments { $args.raku }: ", $_
-       }
-    }
-    LEAVE $!last-run-datetime = $time;
     my &proc = &!proc;
-    self.log-trace: "running process { &!proc.raku } passing argumentss { $args.raku }";
-    proc |$args
+    my $self = self;
+    my %data = self!data-with-time($time){@!data-to-proc}:p;
+    LEAVE $!last-run-datetime = $time;
+    start {
+        my Capture $args = \(|%data, |$!capture);
+        CATCH {
+            default {
+                $self.log-fatal: "Error while running process { &!proc.raku } with arguments { $args.raku }: ", $_
+            }
+        }
+      $self.log-trace: "running process { &!proc.raku } passing argumentss { $args.raku }";
+      proc |$args
+    }
 }
 
 my %months =
@@ -109,7 +114,6 @@ multi transform-par(*%pars where { .values.head !~~ Positional }) {
 }
 
 method !data-with-time(DateTime $time --> Map()) {
-    quietly
     :$time,
     rule         => self,
     last-run     => $!last-run-datetime // DateTime,
@@ -121,7 +125,7 @@ method !data-with-time(DateTime $time --> Map()) {
     sec          => $time.second,
     |(
         |(
-            delta-secs   => my Int() $dsecs  = $time - $!last-run-datetime,
+            delta-secs   => my Int() $dsecs  = $time - $_,
             delta-mins   => my Int() $dmins  = $dsecs  div 60,
             delta-hours  => my Int() $dhours = $dmins  div 60,
             delta-days   => my Int() $ddays  = $dhours div 24,
@@ -140,14 +144,24 @@ submethod TWEAK(|c (*%pars)) {
     enum Units <sec min hour day month year>;
     my $first = [sec, min, hour, day, month, year].first: { %pars{.key}:exists }
     enum DeltaUnits <d-secs d-mins d-hours d-days>;
-    $first //= [d-secs, d-mins, d-hours, d-days].first({ %pars{.key}:exists }) - 1;
+    without $first {
+      $first //= [d-secs, d-mins, d-hours, d-days].first({ %pars{.key}:exists });
+      $first -= 1 with $first;
+    }
+    $first //= day if $!last-day-of-month;
     $first //= -1;
 
-    my &rM = *.list.rotate: $now.month - 1;
-    my &rd = *.list.rotate: $now.day   - 1;
-    my &rh = *.list.rotate: $now.hour;
-    my &rm = *.list.rotate: $now.minute;
-    my &rs = *.list;
+    my @years  = $range-year.list;
+    my @months = $range-month.list;
+    @months .= rotate: $now.month - 1 if @years .head == $now.year;
+    my @days   = $range-day.list;
+    @days   .= rotate: $now.day   - 1 if @months.head == $now.month;
+    my @hours  = $range-hour.list;
+    @hours  .= rotate: $now.hour      if @days  .head == $now.day;
+    my @mins   = $range-min.list;
+    @mins   .= rotate: $now.minute    if @hours .head == $now.hour;
+    my @secs   = $range-sec.list;
+    @secs   .= rotate: $now.second    if @mins  .head == $now.minute;
 
     CATCH {
         default {
@@ -155,14 +169,16 @@ submethod TWEAK(|c (*%pars)) {
         }
     }
 
-    @!year  = %pars<year >:exists ?? transform-par(year  => %pars<year >) !! $first < year  ?? $range-year.list !! $range-year .min;
-    @!month = %pars<month>:exists ?? transform-par(month => %pars<month>) !! $first < month ?? $range-month.&rM !! $range-month.min;
-    @!day   = %pars<day  >:exists ?? transform-par(day   => %pars<day  >) !! $first < day   ?? $range-day.&rd   !! $range-day  .min;
-    @!hour  = %pars<hour >:exists ?? transform-par(hour  => %pars<hour >) !! $first < hour  ?? $range-hour.&rh  !! $range-hour .min;
-    @!min   = %pars<min  >:exists ?? transform-par(min   => %pars<min  >) !! $first < min   ?? $range-min.&rm   !! $range-min  .min;
-    @!sec   = %pars<sec  >:exists ?? transform-par(sec   => %pars<sec  >) !! $first < sec   ?? $range-sec.&rs   !! $range-sec  .min;
+    @!year  = %pars<year >:exists ?? transform-par(year  => %pars<year >) !! $first < year  ?? @years !! $range-year .min;
+    @!month = %pars<month>:exists ?? transform-par(month => %pars<month>) !! $first < month ?? @months!! $range-month.min;
+    @!day   = %pars<day  >:exists ?? transform-par(day   => %pars<day  >) !! $first < day   ?? @days  !! $range-day  .min;
+    @!hour  = %pars<hour >:exists ?? transform-par(hour  => %pars<hour >) !! $first < hour  ?? @hours !! $range-hour .min;
+    @!min   = %pars<min  >:exists ?? transform-par(min   => %pars<min  >) !! $first < min   ?? @mins  !! $range-min  .min;
+    @!sec   = %pars<sec  >:exists ?? transform-par(sec   => %pars<sec  >) !! $first < sec   ?? @secs  !! $range-sec  .min;
 
     @!wday  = %pars<wday >:exists ?? transform-par(wday  => %pars<wday>) !! (1 .. 7).list;
+
+    @!day = (28, 29, 30, 31) if %pars<last-day-of-month>;
 }
 
 multi method ACCEPTS(DateTime $time --> Bool:D) {
@@ -176,6 +192,8 @@ multi method ACCEPTS(DateTime $time --> Bool:D) {
     %b<month> = @!month.first( $time.month        ).defined;
     %b<year > = @!year .first( $time.year         ).defined;
     %b<wday > = @!wday .first( $wday              ).defined;
+
+    %b<ldom> = $time.later(:1day).month > $time.month if $!last-day-of-month;
 
     [&&] %b.values;
 }
