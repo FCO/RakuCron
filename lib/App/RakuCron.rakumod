@@ -1,5 +1,29 @@
-unit class App::RakuCron;
+use Configuration;
 
+use App::RakuCron::Rules;
+
+sub EXPORT {
+    generate-exports App::RakuCron::Rules;
+}
+
+
+sub run-start(App::RakuCron::Rules $rules, Promise $prom = Promise.kept) is export {
+    without $*running {
+        PROCESS::<$running> = False;
+    }
+    start {
+        await $prom;
+        $*running = True;
+        DATE: for $rules.next-datetimes -> DateTime $time {
+            await Promise.at: $time.Instant;
+            for $rules.jobs-should-run-at: $time {
+                last DATE unless $*running;
+                next unless .delta-validations: $time;
+                .run($time)
+            }
+        }
+    }
+}
 
 =begin pod
 

@@ -26,6 +26,8 @@ has $.d-secs;
 has $.d-mins;
 has $.d-hours;
 has $.d-days;
+has $.d-months;
+has $.d-years;
 
 has Bool $.last-day-of-month = False;
 
@@ -119,18 +121,69 @@ method !data-with-time(DateTime $time --> Map()) {
     :$time,
     rule         => self,
     last-run     => $!last-run-datetime // DateTime,
+
     year         => $time.year,
+    years        => $time.year,
+
     month        => $time.month,
+    months       => $time.month,
+
     day          => $time.day,
+    days         => $time.day,
+
     hour         => $time.hour,
+    hours        => $time.hour,
+
     min          => $time.minute,
+    mins         => $time.minute,
+    minute       => $time.minute,
+    minutes      => $time.minute,
+
     sec          => $time.second,
+    secs         => $time.second,
+    second       => $time.second,
+    seconds      => $time.second,
     |(
         |(
-            delta-secs   => my Int() $dsecs  = $time - $_,
-            delta-mins   => my Int() $dmins  = $dsecs  div 60,
-            delta-hours  => my Int() $dhours = $dmins  div 60,
-            delta-days   => my Int() $ddays  = $dhours div 24,
+            delta-secs    => my Int() $dsecs  = $time - $_,
+            delta-sec     => $dsecs,
+            delta-seconds => $dsecs,
+            delta-second  => $dsecs,
+            d-secs        => $dsecs,
+            d-sec         => $dsecs,
+            d-seconds     => $dsecs,
+            d-second      => $dsecs,
+            dsecs         => $dsecs,
+            dsec          => $dsecs,
+            dseconds      => $dsecs,
+            dsecond       => $dsecs,
+
+            delta-mins    => my Int() $dmins  = $dsecs  div 60,
+            delta-min     => $dmins,
+            delta-minutes => $dmins,
+            delta-minute  => $dmins,
+            d-mins        => $dmins,
+            d-min         => $dmins,
+            d-minutes     => $dmins,
+            d-minute      => $dmins,
+            dmins         => $dmins,
+            dmin          => $dmins,
+            dminutes      => $dmins,
+            dminute       => $dmins,
+
+            delta-hours   => my Int() $dhours = $dmins  div 60,
+            delta-hour    => $dhours,
+            d-hours       => $dhours,
+            d-hour        => $dhours,
+            dhours        => $dhours,
+            dhour         => $dhours,
+
+            delta-days    => my Int() $ddays  = $dhours div 24,
+            delta-day     => $ddays,
+            d-days        => $ddays,
+            d-day         => $ddays,
+            ddays         => $ddays,
+            dday          => $ddays,
         ) with $!last-run-datetime
     )
 }
@@ -156,15 +209,10 @@ submethod TWEAK(|c (*%pars)) {
 
     my @years  = $range-year.list;
     my @months = $range-month.list;
-    @months .= rotate: $now.month - 1 if @years .head == $now.year;
     my @days   = $range-day.list;
-    @days   .= rotate: $now.day   - 1 if @months.head == $now.month;
     my @hours  = $range-hour.list;
-    @hours  .= rotate: $now.hour      if @days  .head == $now.day;
     my @mins   = $range-min.list;
-    @mins   .= rotate: $now.minute    if @hours .head == $now.hour;
     my @secs   = $range-sec.list;
-    @secs   .= rotate: $now.second    if @mins  .head == $now.minute;
 
     CATCH {
         default {
@@ -204,46 +252,24 @@ multi method ACCEPTS(DateTime $time --> Bool:D) {
         %b<th-or-rev> = $after.month > $time.month && $jafter.month == $time.month;
     }
 
-    [&&] %b.values;
+    my $resp = [&&] %b.values;
+
+    self.log-trace: %(|%b, :$resp).raku;
+    $resp
 }
 
 method delta-validations(DateTime $time --> Bool:D) {
     my Bool:D %b;
-    %b<none>     = True;
+    %b<none> = True;
     with $!last-run-datetime {
-        %b<last-run> = &!last-run.($!last-run-datetime)                            with &!last-run;
-        %b<d-secs>   = (my $secs = ($time - $!last-run-datetime).Int) >= $!d-secs  with $!d-secs  ;
-        %b<d-mins>   = (my $mins = $secs div 60)                      >= $!d-mins  with $!d-mins  ;
-        %b<d-hours>  = (my $hour = $mins div 60)                      >= $!d-hours with $!d-hours ;
-        %b<d-days>   = (my $days = $hour div 24)                      >= $!d-days  with $!d-days  ;
+        %b<last-run> = &!last-run.($!last-run-datetime)                          with &!last-run;
+        %b<d-secs>   = $!last-run-datetime.later(seconds => $!d-secs  ) <= $time with $!d-secs  ;
+        %b<d-mins>   = $!last-run-datetime.later(minutes => $!d-mins  ) <= $time with $!d-mins  ;
+        %b<d-hours>  = $!last-run-datetime.later(hours   => $!d-hours ) <= $time with $!d-hours ;
+        %b<d-days>   = $!last-run-datetime.later(days    => $!d-days  ) <= $time with $!d-days  ;
+        %b<d-months> = $!last-run-datetime.later(months  => $!d-months) <= $time with $!d-months;
+        %b<d-years>  = $!last-run-datetime.later(years   => $!d-years ) <= $time with $!d-years ;
     }
 
-    self.log-trace: %b.raku;
-
-    [&&] %b.values;
+    my $resp = [&&] %b.values;
 }
-
-method Seq {
-    sub create-datetime(
-        UInt $year,
-        UInt $month,
-        UInt $day,
-        UInt $hour,
-        UInt $minute,
-        UInt $second,
-    ) is assoc<list> {
-        DateTime.new:
-          :timezone($*TZ),
-          :$year, :$month,  :$day,
-          :$hour, :$minute, :$second,
-    }
-
-    my $now = DateTime.now;
-    ([X] @!year, @!month, @!day, @!hour, @!min, @!sec)
-      .map({ try { create-datetime |$_ } // Empty })
-      .toggle(:off, * >= $now)
-      .toggle(:off, * >= DateTime.now)
-      .grep(self)
-}
-
-method iterator { self.Seq.iterator }

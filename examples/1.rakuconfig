@@ -1,4 +1,4 @@
-use App::RakuCron::Configuration;
+use App::RakuCron;
 use App::RakuCron::Rule;
 use Lumberjack;
 
@@ -47,7 +47,7 @@ config {
       ], &print-example
     ;
 
-    # .run-at: :2delta-secs, { die "something went wrong (as expected)" }
+    .run-at: :2delta-secs, &print-example; # { die "something went wrong (as expected)" }
 
     # Last day of month
     .run-at: :last-day-of-month, { say "last day of month" }

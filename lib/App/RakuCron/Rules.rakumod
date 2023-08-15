@@ -1,6 +1,5 @@
 use Configuration;
 use App::RakuCron::Rule;
-use MergeOrderedSeqs;
 use Lumberjack;
 unit class App::RakuCron::Rules does Configuration::Node does Lumberjack::Logger;
 
@@ -26,10 +25,12 @@ multi method run-at(
 
     :week-day( :w-day( :$wday ) ),
     :&last-run,
-    :delta-seconds(:delta-secs(   :delta( :d-seconds( :$d-secs  ) ) ) ),
-    :delta-minute( :delta-mins(           :d-minutes( :$d-mins  )   ) ),
-    :delta-hour(   :delta-hours(                      :$d-hours     ) ),
-    :delta-day(    :delta-days(                       :$d-days      ) ),
+    :delta-seconds(:delta-secs(   :delta( :d-seconds( :d-sec(   :$d-secs   ) ) ) ) ),
+    :delta-minute( :delta-mins(           :d-minutes( :d-min(   :$d-mins   )   ) ) ),
+    :delta-hour(   :delta-hours(                      :d-hour(  :$d-hours  )     ) ),
+    :delta-day(    :delta-days(                       :d-day(   :$d-days   )     ) ),
+    :delta-month(  :delta-monthss(                    :d-month( :$d-months )     ) ),
+    :delta-year(   :delta-years(                      :d-year(  :$d-years  )     ) ),
 
     :$last-day-of-month,
     :business-day( :b-day( :$bday ) ),
@@ -58,6 +59,8 @@ multi method run-at(
         |(:d-mins($_)               with $d-mins               ),
         |(:d-hours($_)              with $d-hours              ),
         |(:d-days($_)               with $d-days               ),
+        |(:d-months($_)             with $d-months             ),
+        |(:d-years($_)              with $d-years              ),
         |(:last-day-of-month($_)    with $last-day-of-month    ),
         |(:capture($_)              with $capture              ),
 
@@ -86,5 +89,7 @@ method jobs-should-run-at(DateTime $time) {
 }
 
 method next-datetimes {
-    merge-ordered-seqs(@!rules).squish
+    (
+        DateTime.now.truncated-to("seconds"), *.later(:1seconds) ... *
+    ).grep: @!rules.any;
 }

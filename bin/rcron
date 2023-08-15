@@ -1,34 +1,25 @@
 #!/usr/bin/env raku
 
-use App::RakuCron::Configuration;
+use App::RakuCron;
 use App::RakuCron::Rules;
 use Lumberjack;
 
 subset File of Str where *.IO.f;
 
-multi MAIN(File $file) {
-    react {
-        my $running = True;
-        whenever config-run :$file, :watch -> App::RakuCron::Rules $rules {
-            $running  = False;
-            $running := run-start $rules;
-        }
+PROCESS::<$running> = False;
+multi MAIN(Str :$e) {
+    my $code = "use App::RakuCron; config \{ $e \}";
+    given single-config-run :$code -> App::RakuCron::Rules $rules {
+        await run-start $rules
     }
 }
 
-sub run-start(App::RakuCron::Rules $rules) is rw {
-    my Bool $still-running = True;
-
-    start {
-        DATE: for $rules.next-datetimes -> DateTime $time {
-            next if $time <= my $now = DateTime.now;
-            await Promise.at: $time.Instant;
-            for $rules.jobs-should-run-at: $time {
-                last DATE unless $still-running;
-                next unless .delta-validations: $time;
-                .run($time)
-            }
+multi MAIN(File $file) {
+    my Promise $last;
+    react {
+        whenever config-run :$file, :watch -> App::RakuCron::Rules $rules {
+            $*running = False;
+            $last = run-start $rules, $last // Promise.kept;
         }
     }
-    $still-running
 }
