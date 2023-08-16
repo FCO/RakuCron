@@ -234,7 +234,7 @@ submethod TWEAK(|c (*%pars)) {
 }
 
 multi method ACCEPTS(DateTime $time is copy --> Bool:D) {
-    $time .= later: |%!drift with %!drift;
+    $time .= later: |%!drift if %!drift;
     my $wday = $time.day-of-week % 7 + 1;
 
     my Bool:D %b;

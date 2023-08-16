@@ -17,13 +17,35 @@ multi method run-at(
     &proc,
     :name(:$id),
     :years( :y( :$year ) ),
-    :months( :m( :$month )),
+    :months( :m( :$month )) is copy,
     :days( :d( :$day) ),
     :hours( :h( :$hour ) ),
     :minutes( :minute( :mins( :$min ) ) ),
     :seconds( :second( :secs( :$sec ) ) ),
 
-    :week-day( :w-day( :$wday ) ),
+    :week-days(:week-day( :weekdays( :weekday( :w-days( :w-day( :wdays( :$wday ) ) ) ) ) ) ) is copy,
+
+    :Sundays(    :sundays(    :Sunday(    :sunday(    :Sun( :$sun ) ) ) ) ),
+    :Mondays(    :mondays(    :Monday(    :monday(    :Mon( :$mon ) ) ) ) ),
+    :Tuesdays(   :tuesdays(   :Tuesday(   :tuesday(   :Tue( :$tue ) ) ) ) ),
+    :Wednesdays( :wednesdays( :Wednesday( :wednesday( :Wed( :$wed ) ) ) ) ),
+    :Thursdays(  :thursdays(  :Thursday(  :thursday(  :Thu( :$thu ) ) ) ) ),
+    :Fridays(    :fridays(    :Friday(    :friday(    :Fri( :$fri ) ) ) ) ),
+    :Saturdays(  :saturdays(  :Saturday(  :saturday(  :Sat( :$sat ) ) ) ) ),
+
+    :January(  :january(  :Jan( :$jan ) ) ),
+    :February( :fabruary( :Feb( :$feb ) ) ),
+    :March(    :march(    :Mar( :$mar ) ) ),
+    :April(    :april(    :Apr( :$apr ) ) ),
+    :May(                       :$may     ),
+    :June(     :june(     :Jun( :$jun ) ) ),
+    :July(     :july(     :Jul( :$jul ) ) ),
+    :August(   :august(   :Aug( :$aug ) ) ),
+    :September(:september(:Sep( :$sep ) ) ),
+    :October(  :october(  :Oct( :$oct ) ) ),
+    :November( :november( :Nov( :$nov ) ) ),
+    :December( :december( :Dec( :$dec ) ) ),
+
     :&last-run,
     :delta-seconds(:delta-secs(   :delta( :d-seconds( :d-sec(   :$d-secs   ) ) ) ) ),
     :delta-minute( :delta-mins(           :d-minutes( :d-min(   :$d-mins   )   ) ) ),
@@ -33,11 +55,11 @@ multi method run-at(
     :delta-year(   :delta-years(                      :d-year(  :$d-years  )     ) ),
 
     :$last-day-of-month,
-    :business-day( :b-day( :$bday ) ),
+    :business-days( :business-day( :b-days( :b-day( :bdays( :$bday ) ) ) ) ),
     :$weekend,
 
-    :st-of-the-month( :nd-of-the-month( :rd-of-the-month( $th-of-the-month ) ) ),
-    :st-last-of-the-month( :nd-last-of-the-month( :rd-last-of-the-month( $th-last-of-the-month ) ) ),
+    :st-of-the-month( :nd-of-the-month( :rd-of-the-month( :$th-of-the-month ) ) ),
+    :st-last-of-the-month( :nd-last-of-the-month( :rd-last-of-the-month( :$th-last-of-the-month ) ) ),
 
     :year-before(                                    :$years-before      ),
     :year-after(                                     :$years-after       ),
@@ -55,9 +77,55 @@ multi method run-at(
     :$capture,
     *%pars where { $_ == 0 || die "Params not recognized: %pars.keys()" },
 ) {
-    die "day can't be defined along with last-day-of-month" if $day.defined  && $last-day-of-month.defined;
-    die "week-day can't be defined along with business-day" if $wday.defined && $bday;
-    die "weekend can't be defined along with business-day"  if $wday.defined && $weekend;
+    my %wday-vars =
+      |(:$sun with $sun),
+      |(:$mon with $mon),
+      |(:$tue with $tue),
+      |(:$wed with $wed),
+      |(:$thu with $thu),
+      |(:$fri with $fri),
+      |(:$sat with $sat),
+    ;
+
+    my %month-vars =
+        |(:$jan with $jan),
+        |(:$feb with $feb),
+        |(:$mar with $mar),
+        |(:$apr with $apr),
+        |(:$may with $may),
+        |(:$jun with $jun),
+        |(:$jul with $jul),
+        |(:$aug with $aug),
+        |(:$sep with $sep),
+        |(:$oct with $oct),
+        |(:$nov with $nov),
+        |(:$dec with $dec),
+    ;
+
+    die "day can't be defined along with last-day-of-month"       if $day.defined  && $last-day-of-month.defined;
+    die "week-day can't be defined along with business-day"       if $wday.defined && $bday;
+    die "weekend can't be defined along with business-day"        if $wday.defined && $weekend;
+    die "incompatible ways of defining weekdays"                  if $wday.defined && %wday-vars;
+    die "incompatible ways of defining weekdays and not weekdays" if ?%wday-vars.values.any && !%wday-vars.values.any;
+    die "incompatible ways of defining months"                    if $month.defined && %month-vars;
+    die "incompatible ways of defining months and not months"     if ?%month-vars.values.any && !%month-vars.values.any;
+
+    if %wday-vars {
+        $wday = <Sun Mon Tue Wed Thu Fri Sat>.grep({
+            %wday-vars{.lc}:exists
+            ?? %wday-vars.values.head
+            !! !%wday-vars.values.head
+        }).list
+    }
+
+    if %month-vars {
+        $month = <Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec>.grep({
+            %month-vars{.lc}:exists
+            ?? %month-vars.values.head
+            !! !%month-vars.values.head
+        }).list
+    }
+
     %*DATA<rules>.push: App::RakuCron::Rule.new:
         |(:id($_)                   with $id                   ),
         |(:year($_)                 with $year                 ),
