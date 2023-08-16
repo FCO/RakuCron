@@ -46,12 +46,12 @@ App::RakuCron is a cron like system and module written and configured in Raku.
 It runs as the user that called it and runs in foreing ground (at least for now).
 
 It uses the L<Configuration raku module|https://github.com/FCO/Configuration>
-You can run it with a configuration file (by convention using the C<.rakuconfig> extension, but not required) (as seen on L<./examples/1.rakuconfiguration).
+You can run it with a configuration file (by convention using the C<.rakuconfig> extension, but not required) (as seen on L<./examples/1.rakuconfig>).
 Or as string (with C<-e> flag as shown on synopsis)
 
 It can also be used as a module:
 
-=begin code:lang<raku>
+=begin code :lang<raku>
 
 use App::RakuCron;
 

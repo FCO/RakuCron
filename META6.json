@@ -6,21 +6,21 @@
   "build-depends": [
   ],
   "depends": [
-      "https://github.com/FCO/Configuration.git",
-      "Lumberjack"
+    "https://github.com/FCO/Configuration.git",
+    "Lumberjack"
   ],
-  "description": "blah blah blah",
+  "description": "Is a cron-like system and module configured in Raku",
   "license": "Artistic-2.0",
   "name": "App::RakuCron",
   "perl": "6.d",
   "provides": {
-      "App::RakuCron": "lib/App/RakuCron.rakumod",
-      "App::RakuCron::Rules": "lib/App/RakuCron/Rules.rakumod",
-      "App::RakuCron::Rule": "lib/App/RakuCron/Rule.rakumod"
+    "App::RakuCron": "lib/App/RakuCron.rakumod",
+    "App::RakuCron::Rule": "lib/App/RakuCron/Rule.rakumod",
+    "App::RakuCron::Rules": "lib/App/RakuCron/Rules.rakumod"
   },
   "resources": [
   ],
-  "source-url": "",
+  "source-url": "https://github.com/FCO/RakuCron.git",
   "tags": [
   ],
   "test-depends": [
