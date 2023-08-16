@@ -32,6 +32,7 @@ has $.d-years;
 has Bool $.last-day-of-month = False;
 
 has $.th-or-rev;
+has %.drift;
 
 has $.capture = \();
 has &.proc;
@@ -232,7 +233,8 @@ submethod TWEAK(|c (*%pars)) {
     @!day = (28, 29, 30, 31) if %pars<last-day-of-month>;
 }
 
-multi method ACCEPTS(DateTime $time --> Bool:D) {
+multi method ACCEPTS(DateTime $time is copy --> Bool:D) {
+    $time .= later: |%!drift with %!drift;
     my $wday = $time.day-of-week % 7 + 1;
 
     my Bool:D %b;

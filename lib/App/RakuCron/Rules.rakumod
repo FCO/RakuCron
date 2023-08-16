@@ -39,6 +39,19 @@ multi method run-at(
     :st-of-the-month( :nd-of-the-month( :rd-of-the-month( $th-of-the-month ) ) ),
     :st-last-of-the-month( :nd-last-of-the-month( :rd-last-of-the-month( $th-last-of-the-month ) ) ),
 
+    :year-before(                                    :$years-before      ),
+    :year-after(                                     :$years-after       ),
+    :month-before(                                   :$months-before     ),
+    :month-after(                                    :$months-after      ),
+    :day-before(                                     :$days-before       ),
+    :day-after(                                      :$days-after        ),
+    :hour-before(                                    :$hours-before      ),
+    :hour-after(                                     :$hours-after       ),
+    :min-before(   :minute-before( :minutes-before(  :$mins-before   ) ) ),
+    :min-after(    :minute-after(  :minutes-after(   :$mins-after    ) ) ),
+    :sec-before(   :second-before(  :seconds-before( :$secs-before   ) ) ),
+    :sec-after(    :second-after(   :seconds-after(  :$secs-after    ) ) ),
+
     :$capture,
     *%pars where { $_ == 0 || die "Params not recognized: %pars.keys()" },
 ) {
@@ -69,6 +82,19 @@ multi method run-at(
 
         |(:th-or-rev(-$_)           with $th-of-the-month      ),
         |(:th-or-rev($_)            with $th-last-of-the-month ),
+
+        |(:drift(%(:years($_)))     with $years-before         ),
+        |(:drift(%(:years(-$_)))    with $years-after          ),
+        |(:drift(%(:months($_)))    with $months-before        ),
+        |(:drift(%(:months(-$_)))   with $months-after         ),
+        |(:drift(%(:days($_)))      with $days-before          ),
+        |(:drift(%(:days(-$_)))     with $days-after           ),
+        |(:drift(%(:hours($_)))     with $hours-before         ),
+        |(:drift(%(:hours(-$_)))    with $hours-after          ),
+        |(:drift(%(:minutes($_)))   with $mins-before          ),
+        |(:drift(%(:minutes(-$_)))  with $mins-after           ),
+        |(:drift(%(:seconds($_)))   with $secs-before          ),
+        |(:drift(%(:seconds(-$_)))  with $secs-after           ),
         :&proc
     ;
 }
@@ -91,5 +117,5 @@ method jobs-should-run-at(DateTime $time) {
 method next-datetimes {
     (
         DateTime.now.truncated-to("seconds"), *.later(:1seconds) ... *
-    ).grep: @!rules.any;
+    ).grep: @!rules.any
 }
