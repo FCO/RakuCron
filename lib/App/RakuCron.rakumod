@@ -65,63 +65,63 @@ run-start config {
 
 C<.run-at> is the most important method, it configures a new job. It can receive many different adverbs:
 
-=head2 :$y | :$year | :$years
+=head3 :$y | :$year | :$years
 
 Defines what year (or years) the job should run on, if nothing else is defined, it will run on the first second of that year(s).
 It expects an Int, a List, a Range or a Callable
 
-=head2 :$m | :$month | :$months
-=head2 :January | :january | :Jan | :$jan
-=head2 :February | :fabruary | :Feb | :$feb
-=head2 :March | :march | :Mar | :$mar
-=head2 :April | :april | :Apr | :$apr
-=head2 :May | :$may
-=head2 :June | :june | :Jun | :$jun
-=head2 :July | :july | :Jul | :$jul
-=head2 :August | :august | :Aug | :$aug
-=head2 :September | :september |:Sep | :$sep
-=head2 :October | :october | :Oct | :$oct
-=head2 :November | :november | :Nov | :$nov
-=head2 :December | :december | :Dec | :$dec
+=head3 :$m | :$month | :$months
+=head3 :January | :january | :Jan | :$jan
+=head3 :February | :fabruary | :Feb | :$feb
+=head3 :March | :march | :Mar | :$mar
+=head3 :April | :april | :Apr | :$apr
+=head3 :May | :$may
+=head3 :June | :june | :Jun | :$jun
+=head3 :July | :july | :Jul | :$jul
+=head3 :August | :august | :Aug | :$aug
+=head3 :September | :september |:Sep | :$sep
+=head3 :October | :october | :Oct | :$oct
+=head3 :November | :november | :Nov | :$nov
+=head3 :December | :december | :Dec | :$dec
 
 Defines what month (or months) the job should run on, if nothing else is defined, it will run on the first second of that month(s).
 It expects an Int, a List, a Range or a Callable
 
-=head2 :$d | :$day | :$days
+=head3 :$d | :$day | :$days
 
 Defines what day (or days) the job should run on, if nothing else is defined, it will run on the first second of that day(s).
 It expects an Int, a List, a Range or a Callable
 
-=head2 :$h | :$hour | :$hours
+=head3 :$h | :$hour | :$hours
 
 Defines what hour (or hours) the job should run on, if nothing else is defined, it will run on the first second of that day(s).
 It expects an Int, a List, a Range or a Callable
 
-=head2 :$min | :$mins | :$minute | :$minutes
+=head3 :$min | :$mins | :$minute | :$minutes
 
 Defines what minute (or minutes) the job should run on, if nothing else is defined, it will run on the first second of that minute(s).
 It expects an Int, a List, a Range or a Callable
 
-=head2 :$sec | :$secs | :$second | :$seconds
+=head3 :$sec | :$secs | :$second | :$seconds
 
 Defines what second (or seconds) the job should run on.
 It expects an Int, a List, a Range or a Callable
 
-=head2 :$week-days | :$week-day | :$weekdays | :$weekday | :$w-days | :$w-day | :$wdays | :$wday
-=head2 :Sundays | :sundays | :Sunday | :sunday | :Sun | :sun
-=head2 :Mondays | :mondays | :Monday | :monday | :Mon | :mon
-=head2 :Tuesdays | :tuesdays | :Tuesday | :tuesday | :Tue | :tue
-=head2 :Wednesdays | :wednesdays | :Wednesday | :wednesday | :Wed | :wed
-=head2 :Thursdays | :thursdays | :Thursday | :Thursday | :Thu | :thu
-=head2 :Fridays | :fridays | :Friday | :friday | :Fri | :fri
-=head2 :Saturdays | :saturdays | :Saturday | :saturday | :Sat | :sat
-=head2 :business-days | :business-day | :b-days | :b-day | :bdays | :bday
-=head2 :weekend
+=head3 :$week-days | :$week-day | :$weekdays | :$weekday | :$w-days | :$w-day | :$wdays | :$wday
+=head3 :Sundays | :sundays | :Sunday | :sunday | :Sun | :sun
+=head3 :Mondays | :mondays | :Monday | :monday | :Mon | :mon
+=head3 :Tuesdays | :tuesdays | :Tuesday | :tuesday | :Tue | :tue
+=head3 :Wednesdays | :wednesdays | :Wednesday | :wednesday | :Wed | :wed
+=head3 :Thursdays | :thursdays | :Thursday | :Thursday | :Thu | :thu
+=head3 :Fridays | :fridays | :Friday | :friday | :Fri | :fri
+=head3 :Saturdays | :saturdays | :Saturday | :saturday | :Sat | :sat
+=head3 :business-days | :business-day | :b-days | :b-day | :bdays | :bday
+=head3 :weekend
 
 Defines what week day (or week days) the job should run on.
 It expects an Int, a List, a Range or a Callable
 
-=head2 :&last-run
+=head3 :&last-run
 
 Defines a Callable that will receives a DateTime object as the only parameter and return a Bool meaning it it should run the job or not.
 
@@ -134,27 +134,27 @@ Defines a Callable that will receives a DateTime object as the only parameter an
 
 Defined the minimum time a job should have ran before running it again
 
-=head2 :$last-day-of-month,
+=head3 :$last-day-of-month,
 
 Runs a job at the last day of the month
 
-=head2 :$st-of-the-month | :$nd-of-the-month | :$rd-of-the-month | :$th-of-the-month ) ) ),
-=head2 :$st-last-of-the-month | :$nd-last-of-the-month | :$rd-last-of-the-month( $th-last-of-the-month ) ) ),
+=head3 :$st-of-the-month | :$nd-of-the-month | :$rd-of-the-month | :$th-of-the-month ) ) ),
+=head3 :$st-last-of-the-month | :$nd-last-of-the-month | :$rd-last-of-the-month( $th-last-of-the-month ) ) ),
 
 Defines it should on the nth first or last occurrence of that rule on the month
 
-=head2 :year-before | :$years-before
-=head2 :year-after | :$years-after
-=head2 :month-before | :$months-before
-=head2 :month-after | :$months-after
-=head2 :day-before | :$days-before
-=head2 :day-after | :$days-after
-=head2 :hour-before | :$hours-before
-=head2 :hour-after | :$hours-after
-=head2 :min-before | :$minute-before | :$minutes-before | :$mins-before
-=head2 :min-after | :$minute-after | :$minutes-after | :$mins-after
-=head2 :sec-before | :$second-before | :$seconds-before | :$secs-before
-=head2 :sec-after | :$second-after | :$seconds-after | :$secs-after
+=head3 :year-before | :$years-before
+=head3 :year-after | :$years-after
+=head3 :month-before | :$months-before
+=head3 :month-after | :$months-after
+=head3 :day-before | :$days-before
+=head3 :day-after | :$days-after
+=head3 :hour-before | :$hours-before
+=head3 :hour-after | :$hours-after
+=head3 :min-before | :$minute-before | :$minutes-before | :$mins-before
+=head3 :min-after | :$minute-after | :$minutes-after | :$mins-after
+=head3 :sec-before | :$second-before | :$seconds-before | :$secs-before
+=head3 :sec-after | :$second-after | :$seconds-after | :$secs-after
 
 Run the job some time after or before the specified time
 
