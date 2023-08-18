@@ -16,6 +16,10 @@ method TWEAK(|) {
 multi method run-at(
     &proc,
     :name(:$id),
+
+    :$on,
+    :$off,
+
     :years( :y( :$year ) ),
     :months( :m( :$month )) is copy,
     :days( :d( :$day) ),
@@ -61,18 +65,25 @@ multi method run-at(
     :st-of-the-month( :nd-of-the-month( :rd-of-the-month( :$th-of-the-month ) ) ),
     :st-last-of-the-month( :nd-last-of-the-month( :rd-last-of-the-month( :$th-last-of-the-month ) ) ),
 
-    :year-before(                                    :$years-before      ),
-    :year-after(                                     :$years-after       ),
-    :month-before(                                   :$months-before     ),
-    :month-after(                                    :$months-after      ),
-    :day-before(                                     :$days-before       ),
-    :day-after(                                      :$days-after        ),
-    :hour-before(                                    :$hours-before      ),
-    :hour-after(                                     :$hours-after       ),
-    :min-before(   :minute-before( :minutes-before(  :$mins-before   ) ) ),
-    :min-after(    :minute-after(  :minutes-after(   :$mins-after    ) ) ),
-    :sec-before(   :second-before(  :seconds-before( :$secs-before   ) ) ),
-    :sec-after(    :second-after(   :seconds-after(  :$secs-after    ) ) ),
+    :year-before(                                   :$years-before      ),
+    :year-after(                                    :$years-after       ),
+    :month-before(                                  :$months-before     ),
+    :month-after(                                   :$months-after      ),
+    :day-before(                                    :$days-before       ),
+    :day-after(                                     :$days-after        ),
+    :hour-before(                                   :$hours-before      ),
+    :hour-after(                                    :$hours-after       ),
+    :min-before(   :minute-before( :minutes-before( :$mins-before   ) ) ),
+    :min-after(    :minute-after(  :minutes-after(  :$mins-after    ) ) ),
+    :sec-before(   :second-before( :seconds-before( :$secs-before   ) ) ),
+    :sec-after(    :second-after(  :seconds-after(  :$secs-after    ) ) ),
+
+    :year-running(                                      :$years-running      ),
+    :month-running(                                     :$months-running     ),
+    :day-running(                                       :$days-running       ),
+    :hour-running(                                      :$hours-running      ),
+    :min-running(   :minute-running( :minutes-running(  :$mins-running   ) ) ),
+    :sec-running(   :second-running(  :seconds-running( :$secs-running   ) ) ),
 
     :$capture,
     *%pars where { $_ == 0 || die "Params not recognized: %pars.keys()" },
@@ -126,8 +137,10 @@ multi method run-at(
         }).list
     }
 
-    %*DATA<rules>.push: App::RakuCron::Rule.new:
+    %*DATA<rules>.push: my App::RakuCron::Rule $rule .= new:
         |(:id($_)                   with $id                   ),
+        |(:on($on)                  with $on                   ),
+        |(:on(!$off)                with $off                  ),
         |(:year($_)                 with $year                 ),
         |(:month($_)                with $month                ),
         |(:day($_)                  with $day                  ),
@@ -163,8 +176,18 @@ multi method run-at(
         |(:drift(%(:minutes(-$_)))  with $mins-after           ),
         |(:drift(%(:seconds($_)))   with $secs-before          ),
         |(:drift(%(:seconds(-$_)))  with $secs-after           ),
+
+        |(:wait(%(:years($_)))     with $years-running         ),
+        |(:wait(%(:months($_)))    with $months-running        ),
+        |(:wait(%(:days($_)))      with $days-running          ),
+        |(:wait(%(:hours($_)))     with $hours-running         ),
+        |(:wait(%(:minutes($_)))   with $mins-running          ),
+        |(:wait(%(:seconds($_)))   with $secs-running          ),
+
         :&proc
     ;
+
+    $rule
 }
 
 multi method run-at(+@values, *%pars) {

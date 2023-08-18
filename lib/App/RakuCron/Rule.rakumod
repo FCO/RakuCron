@@ -8,6 +8,9 @@ my $range-hour  = ^24;
 my $range-min   = ^60;
 my $range-sec   = ^60;
 
+has Bool $.on = True;
+has DateTime $!started-at .= now;
+
 has $.id = ++$;
 has Capture $.rule-params;
 
@@ -33,6 +36,7 @@ has Bool $.last-day-of-month = False;
 
 has $.th-or-rev;
 has %.drift;
+has %.wait;
 
 has $.capture = \();
 has &.proc;
@@ -44,6 +48,24 @@ method log-info(*@msg)  is hidden-from-backtrace {self.Lumberjack::Logger::log-i
 method log-warn(*@msg)  is hidden-from-backtrace {self.Lumberjack::Logger::log-warn:  ["[$!id]", |@msg].join: " "}
 method log-error(*@msg) is hidden-from-backtrace {self.Lumberjack::Logger::log-error: ["[$!id]", |@msg].join: " "}
 method log-fatal(*@msg) is hidden-from-backtrace {self.Lumberjack::Logger::log-fatal: ["[$!id]", |@msg].join: " "}
+
+method start {
+    if $!on {
+        self.log-warn: "Rule already started";
+        return
+    }
+    $!on = True;
+    $!started-at = DateTime.now
+}
+
+method stop {
+    unless $!on {
+        self.log-warn: "Rule already stopped";
+        return
+    }
+    $!on = False;
+    $!started-at = Nil
+}
 
 method run(DateTime $time) {
     my &proc = &!proc;
@@ -234,6 +256,8 @@ submethod TWEAK(|c (*%pars)) {
 }
 
 multi method ACCEPTS(DateTime $time is copy --> Bool:D) {
+    return False unless $!on;
+
     $time .= later: |%!drift if %!drift;
     my $wday = $time.day-of-week % 7 + 1;
 
@@ -261,6 +285,8 @@ multi method ACCEPTS(DateTime $time is copy --> Bool:D) {
 }
 
 method delta-validations(DateTime $time --> Bool:D) {
+    return False unless $!on;
+
     my Bool:D %b;
     %b<none> = True;
     with $!last-run-datetime {
@@ -271,6 +297,10 @@ method delta-validations(DateTime $time --> Bool:D) {
         %b<d-days>   = $!last-run-datetime.later(days    => $!d-days  ) <= $time with $!d-days  ;
         %b<d-months> = $!last-run-datetime.later(months  => $!d-months) <= $time with $!d-months;
         %b<d-years>  = $!last-run-datetime.later(years   => $!d-years ) <= $time with $!d-years ;
+    }
+
+    with $!started-at {
+        %b<wait> = $!started-at.later(|%!wait) <= $time if %!wait;
     }
 
     my $resp = [&&] %b.values;
