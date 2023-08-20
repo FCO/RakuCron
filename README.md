@@ -24,7 +24,7 @@ It can also be used as a module:
 ```raku
 use App::RakuCron;
 
-run-start config {
+await rcron-manager config {
     .run-at: :minutes(* %% 5), :business-days, { say "run on every divisible by 5 minutes on business days" }
 }
 ```

@@ -1,9 +1,15 @@
 use Configuration;
-
 use App::RakuCron::Rules;
+use App::RakuCron::RuleManager;
 
 sub EXPORT {
     generate-exports App::RakuCron::Rules;
+}
+
+sub rcron-manager(App::RakuCron::Rules $rules?) is export {
+    my App::RakuCron::RuleManager $manager .= new;
+    $manager.add-rules: $_ with $rules;
+    $manager.start
 }
 
 =begin pod
@@ -36,7 +42,7 @@ It can also be used as a module:
 
 use App::RakuCron;
 
-run-start config {
+await rcron-manager config {
     .run-at: :minutes(* %% 5), :business-days, { say "run on every divisible by 5 minutes on business days" }
 }
 
