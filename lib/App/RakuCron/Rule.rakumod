@@ -8,6 +8,9 @@ my $range-hour  = ^24;
 my $range-min   = ^60;
 my $range-sec   = ^60;
 
+has Supplier $!supplier .= new;
+has Supply() $.Supply;
+
 has Bool $.on = True;
 has DateTime $!started-at .= now;
 
@@ -54,6 +57,7 @@ method start {
         self.log-warn: "Rule already started";
         return
     }
+    $!Supply = $!supplier.Supply;
     $!on = True;
     $!started-at = DateTime.now
 }
@@ -63,6 +67,7 @@ method stop {
         self.log-warn: "Rule already stopped";
         return
     }
+    $!Supply = Nil;
     $!on = False;
     $!started-at = Nil
 }
@@ -71,6 +76,7 @@ method run(DateTime $time) {
     my &proc = &!proc;
     my $self = self;
     my %data = self!data-with-time($time){@!data-to-proc}:p;
+    $!supplier.emit: $time;
     LEAVE $!last-run-datetime = $time;
     start {
         my Capture $args = \(|%data, |$!capture);
@@ -214,6 +220,14 @@ method !data-with-time(DateTime $time --> Map()) {
 submethod TWEAK(|c (*%pars)) {
     fail "No time rule defined" unless %pars;
 
+    CATCH {
+        default {
+            self.log-fatal: $_;
+            warn $_
+        }
+    }
+    $!Supply = $!supplier.Supply if $!on;
+
     $!rule-params = c;
     self.log-debug: "new rule instanciated:", $!rule-params.raku;
 
@@ -236,12 +250,6 @@ submethod TWEAK(|c (*%pars)) {
     my @hours  = $range-hour.list;
     my @mins   = $range-min.list;
     my @secs   = $range-sec.list;
-
-    CATCH {
-        default {
-            self.log-fatal: $_
-        }
-    }
 
     @!year  = %pars<year >:exists ?? transform-par(year  => %pars<year >) !! $first < year  ?? @years !! $range-year .min;
     @!month = %pars<month>:exists ?? transform-par(month => %pars<month>) !! $first < month ?? @months!! $range-month.min;

@@ -16,7 +16,8 @@
   "provides": {
     "App::RakuCron": "lib/App/RakuCron.rakumod",
     "App::RakuCron::Rule": "lib/App/RakuCron/Rule.rakumod",
-    "App::RakuCron::Rules": "lib/App/RakuCron/Rules.rakumod"
+      "App::RakuCron::Rules": "lib/App/RakuCron/Rules.rakumod",
+      "App::RakuCron::RuleManager": "lib/App/RakuCron/RuleManager.rakumod"
   },
   "resources": [
   ],

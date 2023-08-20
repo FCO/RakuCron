@@ -137,7 +137,7 @@ multi method run-at(
         }).list
     }
 
-    %*DATA<rules>.push: my App::RakuCron::Rule $rule .= new:
+    %*DATA<rules>.push: my $rule = App::RakuCron::Rule.new:
         |(:id($_)                   with $id                   ),
         |(:on($on)                  with $on                   ),
         |(:on(!$off)                with $off                  ),
@@ -186,11 +186,10 @@ multi method run-at(
 
         :&proc
     ;
-
     $rule
 }
 
-multi method run-at(+@values, *%pars) {
+multi method run-at(+@values [$, |], *%pars) {
     my @current = @values.shift<>;
 
     my &proc = @current.pop if @current.tail ~~ Callable;
@@ -199,14 +198,4 @@ multi method run-at(+@values, *%pars) {
     for @current -> Capture \c {
         self.run-at: |%pars, |c, |@values, |($_ with &proc)
     }
-}
-
-method jobs-should-run-at(DateTime $time) {
-    @!rules.grep: { $time ~~ $_ }
-}
-
-method next-datetimes {
-    (
-        DateTime.now.truncated-to("seconds"), *.later(:1seconds) ... *
-    ).grep: @!rules.any
 }

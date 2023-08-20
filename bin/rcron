@@ -2,24 +2,30 @@
 
 use App::RakuCron;
 use App::RakuCron::Rules;
+use App::RakuCron::RuleManager;
 use Lumberjack;
 
 subset File of Str where *.IO.f;
 
-PROCESS::<$running> = False;
-multi MAIN(Str :$e) {
+my App::RakuCron::RuleManager $manager .= new;
+
+multi MAIN(Str :$e, Bool :$v = False) {
+    Lumberjack.dispatchers.append: Lumberjack::Dispatcher::Console.new: :colour if $v;
     my $code = "use App::RakuCron; config \{ $e \}";
     given single-config-run :$code -> App::RakuCron::Rules $rules {
-        await run-start $rules
+        $manager.add-rules: $rules;
     }
+    await $manager.start;
 }
 
-multi MAIN(File $file) {
-    my Promise $last;
+multi MAIN(File $file, Bool :$v = False) {
+    Lumberjack.dispatchers.append: Lumberjack::Dispatcher::Console.new: :colour if $v;
     react {
+        whenever Promise.in: 1 {
+            $manager.start;
+        }
         whenever config-run :$file, :watch -> App::RakuCron::Rules $rules {
-            $*running = False;
-            $last = run-start $rules, $last // Promise.kept;
+            $manager.add-rules: $rules;
         }
     }
 }
