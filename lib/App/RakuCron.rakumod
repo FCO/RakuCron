@@ -14,6 +14,8 @@ sub rcron-manager(App::RakuCron::Rules $rules?) is export {
 
 =begin pod
 
+Still very early stage of development... It doesn't even have tests...
+
 =head1 NAME
 
 App::RakuCron - Is a cron-like system and module configured in Raku

@@ -137,7 +137,7 @@ multi method run-at(
         }).list
     }
 
-    %*DATA<rules>.push: my $rule = App::RakuCron::Rule.new:
+    $.rules.push: my $rule = App::RakuCron::Rule.new:
         |(:id($_)                   with $id                   ),
         |(:on($on)                  with $on                   ),
         |(:on(!$off)                with $off                  ),
