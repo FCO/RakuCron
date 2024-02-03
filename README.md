@@ -1,5 +1,7 @@
 [![Actions Status](https://github.com/FCO/RakuCron/actions/workflows/test.yml/badge.svg)](https://github.com/FCO/RakuCron/actions)
 
+Still very early stage of development... It doesn't even have tests...
+
 NAME
 ====
 
