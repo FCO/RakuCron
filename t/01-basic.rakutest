@@ -1,6 +1,108 @@
 use Test;
-use App::RakuCron;
+use App::RakuCron::Rules;
 
-pass "replace me";
+my App::RakuCron::Rules $rules .= new;
+
+ok $rules, "create object";
+my UInt $ran = 0;
+
+my @values;
+my $count = 0;
+
+$rules.run-at: :secs(*), { $ran++ }
+@values.push: DateTime.now.truncated-to: "seconds";
+@values.push: Nil;
+@values.push: ":secs(*)";
+is $rules.rules.elems, ++$count, "creaed a new rule";
+
+$rules.run-at: :secs(0), { $ran++ }
+@values.push: DateTime.now.truncated-to: "minutes";
+@values.push: @values.tail.later: :1seconds;
+@values.push: ":secs(0)";
+is $rules.rules.elems, ++$count, "creaed a new rule";
+
+$rules.run-at: :min(*), { $ran++ }
+@values.push: DateTime.now.truncated-to: "minutes";
+@values.push: @values.tail.later: :1seconds;
+@values.push: ":min(*)";
+is $rules.rules.elems, ++$count, "creaed a new rule";
+
+$rules.run-at: :min(0), { $ran++ }
+@values.push: DateTime.now.truncated-to: "hours";
+@values.push: @values.tail.later: :1minutes;
+@values.push: ":min(0)";
+is $rules.rules.elems, ++$count, "creaed a new rule";
+
+$rules.run-at: :hour(*), { $ran++ }
+@values.push: DateTime.now.truncated-to: "hours";
+@values.push: @values.tail.later: :1minutes;
+@values.push: ":hour(*)";
+is $rules.rules.elems, ++$count, "creaed a new rule";
+
+$rules.run-at: :hour(0), { $ran++ }
+@values.push: DateTime.now.truncated-to: "days";
+@values.push: @values.tail.later: :1hours;
+@values.push: ":hour(0)";
+is $rules.rules.elems, ++$count, "creaed a new rule";
+
+$rules.run-at: :day(*), { $ran++ }
+@values.push: DateTime.now.truncated-to: "days";
+@values.push: @values.tail.later: :1hours;
+@values.push: ":day(*)";
+is $rules.rules.elems, ++$count, "creaed a new rule";
+
+$rules.run-at: :day(1), { $ran++ }
+@values.push: DateTime.now.truncated-to: "months";
+@values.push: @values.tail.later: :1days;
+@values.push: ":day(0)";
+is $rules.rules.elems, ++$count, "creaed a new rule";
+
+##############################
+
+$rules.run-at: :min(*), :5sec, { $ran++ }
+@values.push: DateTime.now.truncated-to("minutes") + Duration.new: 5;
+@values.push: @values.tail.later: :1seconds;
+@values.push: ":min(*), :5sec";
+is $rules.rules.elems, ++$count, "creaed a new rule";
+
+$rules.run-at: :min(0), :5sec, { $ran++ }
+@values.push: DateTime.now.truncated-to("hours") + Duration.new: 5;
+@values.push: @values.tail.later: :1minutes;
+@values.push: ":min(0), :5sec";
+is $rules.rules.elems, ++$count, "creaed a new rule";
+
+# TODO
+# $rules.run-at: :hour(*), :5sec, { $ran++ }
+# @values.push: DateTime.now.truncated-to("hours") + Duration.new: 5;
+# @values.push: @values.tail.later: :1minutes;
+# @values.push: ":hour(*), :5sec";
+# is $rules.rules.elems, ++$count, "creaed a new rule";
+
+$rules.run-at: :hour(0), :5sec, { $ran++ }
+@values.push: DateTime.now.truncated-to("days") + Duration.new: 5;
+@values.push: @values.tail.later: :1hours;
+@values.push: ":hour(0), :5sec";
+is $rules.rules.elems, ++$count, "creaed a new rule";
+
+# TODO
+# $rules.run-at: :day(*), :5sec, { $ran++ }
+# @values.push: DateTime.now.truncated-to("days") + Duration.new: 5;
+# @values.push: @values.tail.later: :1hours;
+# @values.push: ":day(*), :5sec";
+# is $rules.rules.elems, ++$count, "creaed a new rule";
+
+$rules.run-at: :day(1), :5sec, { $ran++ }
+@values.push: DateTime.now.truncated-to("months") + Duration.new: 5;
+@values.push: @values.tail.later: :1days;
+@values.push: ":day(0), :5sec";
+is $rules.rules.elems, ++$count, "creaed a new rule";
+
+for $rules.rules -> $rule {
+  my $ok  = @values.shift;
+  my $nok = @values.shift;
+  my $msg = @values.shift;
+  ok $_ ~~ $rule, "it matches $ok: \o33[1m$msg\o33[m" with $ok;
+  ok $_ !~~ $rule, "it doesn't match $nok: \o33[1m$msg\o33[m" with $nok;
+}
 
 done-testing;

@@ -1,5 +1,4 @@
-use Lumberjack;
-unit class App::RakuCron::Rule does Iterable does Lumberjack::Logger;
+unit class App::RakuCron::Rule does Iterable;
 
 my $range-year = DateTime.now.year..Inf;
 my $range-month = 1 .. 12;
@@ -45,16 +44,8 @@ has $.capture = \();
 has &.proc;
 has @!data-to-proc = &!proc.signature.params.grep(*.named).map: *.name.substr: 1;
 
-method log-trace(*@msg) is hidden-from-backtrace {self.Lumberjack::Logger::log-trace: ["[$!id]", |@msg].join: " "}
-method log-debug(*@msg) is hidden-from-backtrace {self.Lumberjack::Logger::log-debug: ["[$!id]", |@msg].join: " "}
-method log-info(*@msg)  is hidden-from-backtrace {self.Lumberjack::Logger::log-info:  ["[$!id]", |@msg].join: " "}
-method log-warn(*@msg)  is hidden-from-backtrace {self.Lumberjack::Logger::log-warn:  ["[$!id]", |@msg].join: " "}
-method log-error(*@msg) is hidden-from-backtrace {self.Lumberjack::Logger::log-error: ["[$!id]", |@msg].join: " "}
-method log-fatal(*@msg) is hidden-from-backtrace {self.Lumberjack::Logger::log-fatal: ["[$!id]", |@msg].join: " "}
-
 method start {
     if $!on {
-        self.log-warn: "Rule already started";
         return
     }
     $!Supply = $!supplier.Supply;
@@ -64,7 +55,6 @@ method start {
 
 method stop {
     unless $!on {
-        self.log-warn: "Rule already stopped";
         return
     }
     $!Supply = Nil;
@@ -82,10 +72,9 @@ method run(DateTime $time) {
         my Capture $args = \(|%data, |$!capture);
         CATCH {
             default {
-                $self.log-fatal: "Error while running process { &!proc.raku } with arguments { $args.raku }: ", $_
+                note "Error while running process { &!proc.raku } with arguments { $args.raku }: ", $_
             }
         }
-      $self.log-trace: "running process { &!proc.raku } passing argumentss { $args.raku }";
       proc |$args
     }
 }
@@ -222,14 +211,12 @@ submethod TWEAK(|c (*%pars)) {
 
     CATCH {
         default {
-            self.log-fatal: $_;
             warn $_
         }
     }
     $!Supply = $!supplier.Supply if $!on;
 
     $!rule-params = c;
-    self.log-debug: "new rule instanciated:", $!rule-params.raku;
 
     my $now = DateTime.now;
 
@@ -288,7 +275,6 @@ multi method ACCEPTS(DateTime $time is copy --> Bool:D) {
 
     my $resp = [&&] %b.values;
 
-    self.log-trace: %(|%b, :$resp).raku;
     $resp
 }
 

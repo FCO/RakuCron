@@ -1,4 +1,5 @@
 use Configuration;
+use App::RakuCron::Rule;
 use App::RakuCron::Rules;
 use App::RakuCron::RuleManager;
 
