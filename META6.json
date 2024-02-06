@@ -6,8 +6,7 @@
   "build-depends": [
   ],
   "depends": [
-    "https://github.com/FCO/Configuration.git",
-    "Lumberjack"
+    "Configuration"
   ],
   "description": "Is a cron-like system and module configured in Raku",
   "license": "Artistic-2.0",
