@@ -150,7 +150,7 @@ Run the job some time after or before the specified time
 
 =head1 AUTHOR
 
-Fernando Corrêa <fernando.correa@humanstate.com>
+Fernando Corrêa <fernandocorrea@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
