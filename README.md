@@ -169,7 +169,7 @@ Run the job some time after or before the specified time
 AUTHOR
 ======
 
-Fernando Corrêa <fernando.correa@humanstate.com>
+Fernando Corrêa <fernandocorrea@gmail.com>
 
 COPYRIGHT AND LICENSE
 =====================
